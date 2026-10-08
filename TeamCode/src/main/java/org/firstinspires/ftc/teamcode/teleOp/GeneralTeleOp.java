@@ -2,16 +2,16 @@ package org.firstinspires.ftc.teamcode.teleOp;
 
 
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
-import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.arcrobotics.ftclib.gamepad.TriggerReader;
 
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.config.PSButtons;
 import org.firstinspires.ftc.teamcode.flyWheel.FlyWheel;
 import org.firstinspires.ftc.teamcode.intake.Intake;
 
@@ -25,13 +25,13 @@ import org.firstinspires.ftc.teamcode.intake.Intake;
         Driver:
             left stick - driving bot
             right stick X - rotation
-            GamepadKeys.Button.START (options) - reset IMU
-            GamepadKeys.Button.A (Cross) - toggle slowmode
-            GamepadKeys.Button.B (Circle) - toggle driverCentric
+            options - reset IMU
+            cross - toggle slowmode
+            circle - toggle driverCentric
         Operator:
             Left Trigger - Intake (held)
             Left Bumper - Reverse & Declog Intake (held)
-            Right Trigger - Start FlyWheel
+            Right Trigger - Start FlyWheel (held)
 
  */
 
@@ -49,7 +49,7 @@ public class GeneralTeleOp extends OpMode {
     private boolean slowMode;
     double speedMultiplier;
 
-    private IMU imu;
+    private GoBildaPinpointDriver pinpoint;
 
     private TriggerReader leftTrigger;
     private TriggerReader rightTrigger;
@@ -63,30 +63,30 @@ public class GeneralTeleOp extends OpMode {
 
     @Override
     public void init() {
-        flyWheel = new FlyWheel(hardwareMap);
-        intake = new Intake(hardwareMap);
+//        flyWheel = new FlyWheel(hardwareMap, "fW");
+//        intake = new Intake(hardwareMap, "int");
         fl = hardwareMap.dcMotor.get("fl");
         fr = hardwareMap.dcMotor.get("fr");
         bl = hardwareMap.dcMotor.get("bl");
         br = hardwareMap.dcMotor.get("br");
-        imu = hardwareMap.get(IMU.class, "imu");
+        pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
 
         fl.setDirection(DcMotor.Direction.REVERSE);
         bl.setDirection(DcMotor.Direction.REVERSE);
 
-        IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
-                RevHubOrientationOnRobot.LogoFacingDirection.UP,
-                RevHubOrientationOnRobot.UsbFacingDirection.LEFT));
-        imu.initialize(parameters);
+        pinpoint.setOffsets(0.0, 0.0, DistanceUnit.MM);
+        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        pinpoint.resetPosAndIMU();
 
         driver = new GamepadEx(gamepad1);
         operator = new GamepadEx(gamepad2);
-        leftTrigger = new TriggerReader(operator, GamepadKeys.Trigger.LEFT_TRIGGER);
-        rightTrigger = new TriggerReader(operator, GamepadKeys.Trigger.RIGHT_TRIGGER);
+        leftTrigger = new TriggerReader(operator, PSButtons.LEFT_TRIGGER);
+        rightTrigger = new TriggerReader(operator, PSButtons.RIGHT_TRIGGER);
     }
 
     @Override
     public void loop() {
+        pinpoint.update();
         speedMultiplier = slowMode ? 0.4 : 1.0;
 
         driver.readButtons();
@@ -97,16 +97,20 @@ public class GeneralTeleOp extends OpMode {
         handleDriveTrain();
         checkForInput();
 
-        if (intaking) {
-            intake.startMotor();
-        } else {
-            intake.stopMotor();
+        if (intake != null) {
+            if (intaking) {
+                intake.startMotor();
+            } else {
+                intake.stopMotor();
+            }
         }
 
-        if (shooting) {
-            flyWheel.setPower(1.0);
-        } else {
-            flyWheel.stopMotor();
+        if (flyWheel != null){
+            if (shooting) {
+                flyWheel.setPower(1.0);
+            } else {
+                flyWheel.stopMotor();
+            }
         }
 
         updateTelemetry();
@@ -119,18 +123,18 @@ public class GeneralTeleOp extends OpMode {
 
 
     private void checkForInput(){
-        if (driver.wasJustPressed(GamepadKeys.Button.START)) {
-            imu.resetYaw();
+        if (driver.wasJustPressed(PSButtons.OPTIONS)) {
+            pinpoint.resetPosAndIMU();
         }
-        if (driver.wasJustPressed(GamepadKeys.Button.B)) {
+        if (driver.wasJustPressed(PSButtons.CROSS)) {
             isFieldCentric = !isFieldCentric;
         }
-        if (driver.wasJustPressed(GamepadKeys.Button.A)) {
+        if (driver.wasJustPressed(PSButtons.CIRCLE)) {
             slowMode = !slowMode;
         }
         shooting = rightTrigger.isDown();
         intaking = leftTrigger.isDown();
-        if (operator.wasJustPressed(GamepadKeys.Button.LEFT_BUMPER)) {
+        if (operator.wasJustPressed(PSButtons.LEFT_BUMPER) && intake != null) {
             intake.reversePower();
         }
     }
@@ -141,7 +145,7 @@ public class GeneralTeleOp extends OpMode {
         double lx = deadzone(driver.getLeftX()) * speedMultiplier;
         double rx = deadzone(driver.getRightX()) * speedMultiplier;
 
-        double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+        double botHeading = pinpoint.getHeading(AngleUnit.RADIANS);
 
         double rotX = lx * Math.cos(-botHeading) - ly * Math.sin(-botHeading);
         double rotY = lx * Math.sin(-botHeading) + ly * Math.cos(-botHeading);
@@ -156,8 +160,8 @@ public class GeneralTeleOp extends OpMode {
             br.setPower((rotY + rotX - rx) / denominator);
         } else {
             fl.setPower((ly + lx + rx) / robotDenominator);
-            bl.setPower((ly - lx + rx) / robotDenominator);
-            fr.setPower((ly - lx - rx) / robotDenominator);
+            bl.setPower((ly - lx - rx) / robotDenominator);
+            fr.setPower((ly - lx + rx) / robotDenominator);
             br.setPower((ly + lx - rx) / robotDenominator);
         }
     }
@@ -172,6 +176,7 @@ public class GeneralTeleOp extends OpMode {
         telemetry.addData("br power", br.getPower());
         telemetry.addData("intaking", intaking);
         telemetry.addData("outtaking", shooting);
+        telemetry.addData("flyWheel rpm", flyWheel.getPower());
         telemetry.update();
     }
 }

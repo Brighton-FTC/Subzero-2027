@@ -9,8 +9,8 @@ public class Intake {
 
 
 
-    public Intake(HardwareMap hw) {
-        motor = hw.get(DcMotorEx.class, "int");
+    public Intake(HardwareMap hw, String name) {
+        motor = hw.get(DcMotorEx.class, name);
     }
 
     public void setMotor(double power) {
