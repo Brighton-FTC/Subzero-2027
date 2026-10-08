@@ -44,9 +44,12 @@ public class GeneralTeleOp extends OpMode {
     private DcMotor fr;
     private DcMotor bl;
     private DcMotor br;
+    private enum RotStates {MANUAL, AUTO, HOLD}
+    private RotStates currentState = RotStates.AUTO;
 
     private boolean isFieldCentric;
     private boolean slowMode;
+    private boolean strafeMode;
     double speedMultiplier;
 
     private GoBildaPinpointDriver pinpoint;
@@ -74,7 +77,7 @@ public class GeneralTeleOp extends OpMode {
         fl.setDirection(DcMotor.Direction.REVERSE);
         bl.setDirection(DcMotor.Direction.REVERSE);
 
-        pinpoint.setOffsets(0.0, 0.0, DistanceUnit.MM);
+        pinpoint.setOffsets(40.0, -16.9, DistanceUnit.MM);
         pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
         pinpoint.resetPosAndIMU();
 
@@ -93,9 +96,8 @@ public class GeneralTeleOp extends OpMode {
         operator.readButtons();
         leftTrigger.readValue();
         rightTrigger.readValue();
-
-        handleDriveTrain();
         checkForInput();
+        handleDriveTrain();
 
         if (intake != null) {
             if (intaking) {
@@ -118,7 +120,7 @@ public class GeneralTeleOp extends OpMode {
 
 
     private double deadzone(double v) {
-        return Math.abs(v) < 0.05 ? 0 : v;
+        return Math.abs(v) < 0.1 ? 0 : v;
     }
 
 
@@ -132,6 +134,19 @@ public class GeneralTeleOp extends OpMode {
         if (driver.wasJustPressed(PSButtons.CIRCLE)) {
             slowMode = !slowMode;
         }
+
+        if (Math.abs(driver.getRightX()) >= 0.3) {
+            currentState = RotStates.MANUAL;
+            strafeMode = false;
+        } else if (driver.isDown(PSButtons.SQUARE)) {
+            strafeMode = true;
+        } else if (Math.abs(Math.hypot(driver.getLeftX(), driver.getLeftY())) >= 0.3) {
+            currentState = RotStates.AUTO;
+            strafeMode = false;
+        } else {
+            currentState = RotStates.HOLD;
+        }
+
         shooting = rightTrigger.isDown();
         intaking = leftTrigger.isDown();
         if (operator.wasJustPressed(PSButtons.LEFT_BUMPER) && intake != null) {
@@ -144,25 +159,36 @@ public class GeneralTeleOp extends OpMode {
         double ly = deadzone(-driver.getLeftY()) * speedMultiplier;
         double lx = deadzone(driver.getLeftX()) * speedMultiplier;
         double rx = deadzone(driver.getRightX()) * speedMultiplier;
-
+        double rot = 0.0;
+        double rotation;
         double botHeading = pinpoint.getHeading(AngleUnit.RADIANS);
+        rotation = Math.atan2(ly, lx);
+        if (currentState == RotStates.AUTO) {
+            rot = rotation;
+        } else if (currentState == RotStates.MANUAL) {
+            rot = rx;
+        } else if (currentState == RotStates.HOLD) {
+            rot = rot;
+        } else if (strafeMode == true) {
+            rot = 0;
+        }
 
         double rotX = lx * Math.cos(-botHeading) - ly * Math.sin(-botHeading);
         double rotY = lx * Math.sin(-botHeading) + ly * Math.cos(-botHeading);
         rotX *= 1.1;
-        double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rx), 1);
-        double robotDenominator = Math.max(Math.abs(lx) + Math.abs(ly) + Math.abs(rx), 1);
+        double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rot), 1);
+        double robotDenominator = Math.max(Math.abs(lx) + Math.abs(ly) + Math.abs(rot), 1);
 
         if (isFieldCentric) {
-            fl.setPower((rotY + rotX + rx) / denominator);
-            fr.setPower((rotY - rotX - rx) / denominator);
-            bl.setPower((rotY - rotX + rx) / denominator);
-            br.setPower((rotY + rotX - rx) / denominator);
+            fl.setPower((rotY + rotX + rot) / denominator);
+            fr.setPower((rotY - rotX - rot) / denominator);
+            bl.setPower((rotY - rotX + rot) / denominator);
+            br.setPower((rotY + rotX - rot) / denominator);
         } else {
-            fl.setPower((ly + lx + rx) / robotDenominator);
-            bl.setPower((ly - lx - rx) / robotDenominator);
-            fr.setPower((ly - lx + rx) / robotDenominator);
-            br.setPower((ly + lx - rx) / robotDenominator);
+            fl.setPower((ly + lx + rot) / robotDenominator);
+            bl.setPower((ly - lx - rot) / robotDenominator);
+            fr.setPower((ly - lx + rot) / robotDenominator);
+            br.setPower((ly + lx - rot) / robotDenominator);
         }
     }
 
@@ -176,7 +202,7 @@ public class GeneralTeleOp extends OpMode {
         telemetry.addData("br power", br.getPower());
         telemetry.addData("intaking", intaking);
         telemetry.addData("outtaking", shooting);
-        telemetry.addData("flyWheel rpm", flyWheel.getPower());
+        //telemetry.addData("flyWheel rpm", flyWheel.getPower());
         telemetry.update();
     }
 }
