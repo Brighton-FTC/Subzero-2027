@@ -176,7 +176,7 @@ public class GeneralTeleOp extends OpMode {
         telemetry.addData("br power", br.getPower());
         telemetry.addData("intaking", intaking);
         telemetry.addData("outtaking", shooting);
-        telemetry.addData("flyWheel rpm", flyWheel.getPower());
+//        telemetry.addData("flyWheel rpm", flyWheel.getPower());
         telemetry.update();
     }
 }
