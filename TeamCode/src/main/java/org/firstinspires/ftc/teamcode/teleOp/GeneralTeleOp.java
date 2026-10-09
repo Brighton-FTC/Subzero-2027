@@ -162,14 +162,20 @@ public class GeneralTeleOp extends OpMode {
         double rot = 0.0;
         double rotation;
         double botHeading = pinpoint.getHeading(AngleUnit.RADIANS);
-        rotation = Math.atan2(ly, lx);
+        if (lx == 0 && ly == 0){
+            rotation = Math.atan2(Math.abs(ly), Math.abs(lx));
+        }
+        else{
+            rotation = Math.atan2(ly, lx);
+        }
+
         if (currentState == RotStates.AUTO) {
             rot = rotation;
         } else if (currentState == RotStates.MANUAL) {
             rot = rx;
         } else if (currentState == RotStates.HOLD) {
             rot = rot;
-        } else if (strafeMode == true) {
+        } else if (strafeMode) {
             rot = 0;
         }
 
@@ -186,8 +192,8 @@ public class GeneralTeleOp extends OpMode {
             br.setPower((rotY + rotX - rot) / denominator);
         } else {
             fl.setPower((ly + lx + rot) / robotDenominator);
-            bl.setPower((ly - lx - rot) / robotDenominator);
-            fr.setPower((ly - lx + rot) / robotDenominator);
+            fr.setPower((ly - lx - rot) / robotDenominator);
+            bl.setPower((ly - lx + rot) / robotDenominator);
             br.setPower((ly + lx - rot) / robotDenominator);
         }
     }
