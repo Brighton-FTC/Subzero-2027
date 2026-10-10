@@ -22,6 +22,7 @@ public class GeneralAuto extends OpMode {
 
     private FlyWheel flyWheel;
     private Intake intake;
+    private String color;
 
     private Follower follower;
     private Circle circleClass;
@@ -64,4 +65,6 @@ public class GeneralAuto extends OpMode {
         follower.update();
         Scheduler.execute();
     }
+
+
 }

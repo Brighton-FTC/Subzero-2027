@@ -1,7 +1,10 @@
 package org.firstinspires.ftc.teamcode.config;
 
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
+import com.bylazar.configurables.annotations.Configurable;
 
+
+@Configurable
 public class PSButtons {
     public static GamepadKeys.Button SQUARE = GamepadKeys.Button.X;
     public static GamepadKeys.Button TRIANGLE = GamepadKeys.Button.Y;

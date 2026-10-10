@@ -8,6 +8,15 @@ public class ObjectSpotter {
     private PoseFactory poseFactory = PoseFactory.degrees();
     private Pose pose = poseFactory.of(0, 0, 0);
     private boolean spotted = false;
+    private Boolean isBlue;
+
+    public ObjectSpotter(String color) {
+        if (color == "Blue") {
+            isBlue = true;
+        } else if (color == "Red") {
+            isBlue = false;
+        }
+    }
 
 
     public Pose getPose(){
