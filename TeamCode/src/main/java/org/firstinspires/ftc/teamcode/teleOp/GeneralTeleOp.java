@@ -141,7 +141,7 @@ public class GeneralTeleOp extends OpMode {
 
 
     public void handleDriveTrain() {
-        double ly = deadzone(-driver.getLeftY()) * speedMultiplier;
+        double ly = deadzone(driver.getLeftY()) * speedMultiplier;
         double lx = deadzone(driver.getLeftX()) * speedMultiplier;
         double rx = deadzone(driver.getRightX()) * speedMultiplier;
 
@@ -160,8 +160,8 @@ public class GeneralTeleOp extends OpMode {
             br.setPower((rotY + rotX - rx) / denominator);
         } else {
             fl.setPower((ly + lx + rx) / robotDenominator);
-            bl.setPower((ly - lx - rx) / robotDenominator);
-            fr.setPower((ly - lx + rx) / robotDenominator);
+            fr.setPower((ly - lx - rx) / robotDenominator);
+            bl.setPower((ly - lx + rx) / robotDenominator);
             br.setPower((ly + lx - rx) / robotDenominator);
         }
     }
