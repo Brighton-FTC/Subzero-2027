@@ -44,6 +44,10 @@ public class GeneralAuto extends OpMode {
         circle = circleClass.getCircle();
 
         follower = Constants.create(hardwareMap);
+        if (follower == null) {
+            telemetry.addLine("follower is null");
+        }
+        assert follower != null;
         follower.setPose(startPose);
     }
 
