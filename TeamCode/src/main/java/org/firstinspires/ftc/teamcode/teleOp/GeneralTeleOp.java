@@ -46,6 +46,8 @@ public class GeneralTeleOp extends OpMode {
     private DcMotor br;
     private enum RotStates {MANUAL, AUTO, HOLD}
     private RotStates currentState = RotStates.AUTO;
+    final private double kP = 1.5;
+    private double target = 0.0;
 
     private boolean isFieldCentric;
     private boolean slowMode;
@@ -162,22 +164,29 @@ public class GeneralTeleOp extends OpMode {
         double rot = 0.0;
         double rotation;
         double botHeading = pinpoint.getHeading(AngleUnit.RADIANS);
-        if (lx == 0 && ly == 0){
-            rotation = Math.atan2(Math.abs(ly), Math.abs(lx));
-        }
-        else{
-            rotation = Math.atan2(ly, lx);
-        }
 
-        if (currentState == RotStates.AUTO) {
-            rot = rotation;
-        } else if (currentState == RotStates.MANUAL) {
+        boolean isTranslating = (Math.abs(lx) > 0.01 || Math.abs(ly) > 0.01);
+
+        if (currentState == RotStates.MANUAL) {
             rot = rx;
-        } else if (currentState == RotStates.HOLD) {
-            rot = rot;
+            target = botHeading;
         } else if (strafeMode) {
             rot = 0;
+            target = botHeading;
+        } else {
+            if (isTranslating && isFieldCentric) {
+                target = Math.atan2(ly, lx);
+            }
         }
+
+
+        double error = target - botHeading;
+        while (error > Math.PI) error -= 2 * Math.PI;
+        while (error < -Math.PI) error += 2 * Math.PI;
+
+        rot = error * kP;
+        rot = Math.max(-0.8, Math.min(0.8, rot));
+
 
         double rotX = lx * Math.cos(-botHeading) - ly * Math.sin(-botHeading);
         double rotY = lx * Math.sin(-botHeading) + ly * Math.cos(-botHeading);
