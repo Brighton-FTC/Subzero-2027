@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.auto;
 import static com.pedropathing.ivy.Scheduler.schedule;
 import static com.pedropathing.ivy.pedro.PedroCommands.follow;
 
+import com.pedropathing.api.Paths;
 import com.pedropathing.api.PoseFactory;
 import com.pedropathing.ivy.Scheduler;
 import com.pedropathing.math.Pose;
@@ -32,6 +33,7 @@ public class GeneralAuto extends OpMode {
     private PoseFactory poseFactory;
     private Pose startPose;
     private Path circle;
+    private boolean trackingTarget;
 
     @Override
     public void init() {
@@ -64,11 +66,22 @@ public class GeneralAuto extends OpMode {
 
     @Override
     public void loop() {
+
+        Pose currentPose = follower.pose();
+        follower.update();
+        Scheduler.execute();
+
+
         if (objectSpotter.getPose() != null) {
             target = objectSpotter.getPose();
         }
-        follower.update();
-        Scheduler.execute();
+
+        if (target != null && !trackingTarget) {
+            trackingTarget = true;
+            schedule(follow(follower, Paths.line(currentPose, target)));
+        }
+
+
     }
 
 

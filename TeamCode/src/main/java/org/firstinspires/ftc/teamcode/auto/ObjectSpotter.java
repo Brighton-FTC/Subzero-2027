@@ -9,6 +9,7 @@ public class ObjectSpotter {
     protected Pose pose = poseFactory.of(0, 0, 0);
     protected boolean spotted = false;
 
+
     public ObjectSpotter() {
     }
 
