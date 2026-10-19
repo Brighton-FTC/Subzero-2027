@@ -5,25 +5,38 @@ import com.pedropathing.api.PoseFactory;
 import com.pedropathing.math.Pose;
 
 public class ObjectSpotter {
-    private PoseFactory poseFactory = PoseFactory.degrees();
-    private Pose pose = poseFactory.of(0, 0, 0);
-    private boolean spotted = false;
-    private Boolean isBlue;
+    protected PoseFactory poseFactory = PoseFactory.degrees();
+    protected Pose pose = poseFactory.of(0, 0, 0);
+    protected boolean spotted = false;
 
-    public ObjectSpotter(String color) {
-        if (color == "Blue") {
-            isBlue = true;
-        } else if (color == "Red") {
-            isBlue = false;
-        }
+
+    public ObjectSpotter() {
     }
 
 
-    public Pose getPose(){
-        if (spotted) {
-            return pose;
-        } else {
+    public Pose getPose() {
+        return null;
+    }
+
+
+
+    public static class BlueObjectSpotter extends ObjectSpotter{
+        public BlueObjectSpotter () {}
+
+        @Override
+        public Pose getPose() {
             return null;
         }
+
+    }
+
+    public static class RedObjectSpotter extends ObjectSpotter{
+        public RedObjectSpotter () {}
+
+        @Override
+        public Pose getPose(){
+            return null;
+        }
+
     }
 }

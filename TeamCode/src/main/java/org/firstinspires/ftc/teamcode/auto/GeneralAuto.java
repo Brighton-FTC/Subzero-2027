@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.auto;
 import static com.pedropathing.ivy.Scheduler.schedule;
 import static com.pedropathing.ivy.pedro.PedroCommands.follow;
 
+import com.pedropathing.api.Paths;
 import com.pedropathing.api.PoseFactory;
 import com.pedropathing.ivy.Scheduler;
 import com.pedropathing.math.Pose;
@@ -12,6 +13,7 @@ import com.pedropathing.paths.Path;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
+import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.flyWheel.FlyWheel;
 import org.firstinspires.ftc.teamcode.intake.Intake;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
@@ -22,8 +24,8 @@ public class GeneralAuto extends OpMode {
 
     private FlyWheel flyWheel;
     private Intake intake;
-    private String color;
 
+    private boolean isBlue = RobotConfig.Auto.isBlue;
     private Follower follower;
     private Circle circleClass;
     private ObjectSpotter objectSpotter;
@@ -31,6 +33,7 @@ public class GeneralAuto extends OpMode {
     private PoseFactory poseFactory;
     private Pose startPose;
     private Path circle;
+    private boolean trackingTarget;
 
     @Override
     public void init() {
@@ -40,7 +43,11 @@ public class GeneralAuto extends OpMode {
         startPose = poseFactory.of(24, 24, 0);
 
         circleClass = new Circle();
-        objectSpotter = new ObjectSpotter();
+        if (isBlue) {
+            objectSpotter = new ObjectSpotter.BlueObjectSpotter();
+        } else {
+            objectSpotter = new ObjectSpotter.RedObjectSpotter();
+        }
 
         circle = circleClass.getCircle();
 
@@ -59,11 +66,22 @@ public class GeneralAuto extends OpMode {
 
     @Override
     public void loop() {
+
+        Pose currentPose = follower.pose();
+        follower.update();
+        Scheduler.execute();
+
+
         if (objectSpotter.getPose() != null) {
             target = objectSpotter.getPose();
         }
-        follower.update();
-        Scheduler.execute();
+
+        if (target != null && !trackingTarget) {
+            trackingTarget = true;
+            schedule(follow(follower, Paths.line(currentPose, target)));
+        }
+
+
     }
 
 
