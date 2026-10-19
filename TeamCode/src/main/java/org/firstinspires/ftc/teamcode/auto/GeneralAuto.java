@@ -12,6 +12,7 @@ import com.pedropathing.paths.Path;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
+import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.flyWheel.FlyWheel;
 import org.firstinspires.ftc.teamcode.intake.Intake;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
@@ -22,8 +23,8 @@ public class GeneralAuto extends OpMode {
 
     private FlyWheel flyWheel;
     private Intake intake;
-    private String color;
 
+    private boolean isBlue = RobotConfig.Auto.isBlue;
     private Follower follower;
     private Circle circleClass;
     private ObjectSpotter objectSpotter;
@@ -40,7 +41,11 @@ public class GeneralAuto extends OpMode {
         startPose = poseFactory.of(24, 24, 0);
 
         circleClass = new Circle();
-        objectSpotter = new ObjectSpotter();
+        if (isBlue) {
+            objectSpotter = new ObjectSpotter.BlueObjectSpotter();
+        } else {
+            objectSpotter = new ObjectSpotter.RedObjectSpotter();
+        }
 
         circle = circleClass.getCircle();
 
