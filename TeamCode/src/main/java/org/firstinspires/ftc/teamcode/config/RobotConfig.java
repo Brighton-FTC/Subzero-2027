@@ -15,7 +15,7 @@ public class RobotConfig {
     }
 
     @Configurable
-    public class Auto {
+    public static class Auto {
         private Auto () {}
 
         public static boolean isBlue;
