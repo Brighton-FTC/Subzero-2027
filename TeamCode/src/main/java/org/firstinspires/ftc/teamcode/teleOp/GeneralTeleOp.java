@@ -21,13 +21,14 @@ import org.firstinspires.ftc.teamcode.intake.Intake;
     General section for TeleOp.
 
     Controls:
-        Sorted into 2 categories - driver (gamepad 1) and operator (gamepad 1)
+        Sorted into 2 categories - driver (gamepad 1) and operator (gamepad 2)
         Driver:
             left stick - driving bot
-            right stick X - rotation
+            right stick X - rotation (manual)
             options - reset IMU
-            cross - toggle slowmode
-            circle - toggle driverCentric
+            cross - toggle field centric
+            circle - toggle slowmode
+            square - strafe mode (held, disables heading hold)
         Operator:
             Left Trigger - Intake (held)
             Left Bumper - Reverse & Declog Intake (held)
@@ -63,6 +64,7 @@ public class GeneralTeleOp extends OpMode {
     private Intake intake;
 
     private boolean intaking;
+    private boolean reversing;
     private boolean shooting;
 
 
@@ -102,7 +104,7 @@ public class GeneralTeleOp extends OpMode {
         handleDriveTrain();
 
         if (intake != null) {
-            if (intaking) {
+            if (intaking || reversing) {
                 intake.startMotor();
             } else {
                 intake.stopMotor();
@@ -129,6 +131,7 @@ public class GeneralTeleOp extends OpMode {
     private void checkForInput(){
         if (driver.wasJustPressed(PSButtons.OPTIONS)) {
             pinpoint.resetPosAndIMU();
+            target = 0.0;
         }
         if (driver.wasJustPressed(PSButtons.CROSS)) {
             isFieldCentric = !isFieldCentric;
@@ -147,12 +150,22 @@ public class GeneralTeleOp extends OpMode {
             strafeMode = false;
         } else {
             currentState = RotStates.HOLD;
+            strafeMode = false;
         }
 
         shooting = rightTrigger.isDown();
         intaking = leftTrigger.isDown();
-        if (operator.wasJustPressed(PSButtons.LEFT_BUMPER) && intake != null) {
-            intake.reversePower();
+
+        // Reverse while held: flip direction on press, flip back on release.
+        // ASSUMPTION: Intake.reversePower() toggles direction. Adjust if it doesn't.
+        if (intake != null) {
+            if (operator.wasJustPressed(PSButtons.LEFT_BUMPER)) {
+                reversing = true;
+                intake.reversePower();
+            } else if (operator.wasJustReleased(PSButtons.LEFT_BUMPER)) {
+                reversing = false;
+                intake.reversePower();
+            }
         }
     }
 
@@ -161,31 +174,38 @@ public class GeneralTeleOp extends OpMode {
         double ly = deadzone(driver.getLeftY()) * speedMultiplier;
         double lx = deadzone(driver.getLeftX()) * speedMultiplier;
         double rx = deadzone(driver.getRightX()) * speedMultiplier;
-        double rot = 0.0;
-        double rotation;
+        double rot;
         double botHeading = pinpoint.getHeading(AngleUnit.RADIANS);
 
         boolean isTranslating = (Math.abs(lx) > 0.01 || Math.abs(ly) > 0.01);
 
         if (currentState == RotStates.MANUAL) {
+            // Driver is turning: pass the stick through and keep the target
+            // synced to the current heading so hold doesn't snap back later.
             rot = rx;
             target = botHeading;
-        } else if (strafeMode) {
+        } else if (strafeMode || !isFieldCentric) {
+            // Strafe mode or robot-centric: no heading hold at all.
             rot = 0;
             target = botHeading;
         } else {
-            if (isTranslating && isFieldCentric) {
-                target = Math.atan2(ly, lx);
+            // Heading hold / face direction of travel (field-centric only).
+            if (isTranslating) {
+                // Angle of the stick vector measured CCW from "forward" (+Y),
+                // matching the field-centric rotation below.
+                target = Math.atan2(-lx, ly);
             }
+
+            double error = target - botHeading;
+            while (error > Math.PI) error -= 2 * Math.PI;
+            while (error < -Math.PI) error += 2 * Math.PI;
+
+            // Negative because positive motor "rot" turns the robot clockwise
+            // while Pinpoint heading increases counter-clockwise.
+            // If the robot spins away from the target, remove the minus sign.
+            rot = -error * kP;
+            rot = Math.max(-0.8, Math.min(0.8, rot));
         }
-
-
-        double error = target - botHeading;
-        while (error > Math.PI) error -= 2 * Math.PI;
-        while (error < -Math.PI) error += 2 * Math.PI;
-
-        rot = error * kP;
-        rot = Math.max(-0.8, Math.min(0.8, rot));
 
 
         double rotX = lx * Math.cos(-botHeading) - ly * Math.sin(-botHeading);
@@ -211,11 +231,13 @@ public class GeneralTeleOp extends OpMode {
     public void updateTelemetry() {
         telemetry.addData("teleOp type", isFieldCentric ? "fieldTeleOp" : "robotTeleOp");
         telemetry.addData("slowMode enabled", slowMode);
+        telemetry.addData("rot state", currentState);
         telemetry.addData("fl power", fl.getPower());
         telemetry.addData("fr power", fr.getPower());
         telemetry.addData("bl power", bl.getPower());
         telemetry.addData("br power", br.getPower());
         telemetry.addData("intaking", intaking);
+        telemetry.addData("reversing", reversing);
         telemetry.addData("outtaking", shooting);
         //telemetry.addData("flyWheel rpm", flyWheel.getPower());
         telemetry.update();
