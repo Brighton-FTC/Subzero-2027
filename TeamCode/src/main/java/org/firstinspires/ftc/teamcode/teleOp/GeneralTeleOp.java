@@ -47,7 +47,7 @@ public class GeneralTeleOp extends OpMode {
     private DcMotor br;
     private enum RotStates {MANUAL, AUTO, HOLD}
     private RotStates currentState = RotStates.AUTO;
-    final private double kP = 1.5;
+    final private double kP = 1.2;
     private double target = 0.0;
 
     private boolean isFieldCentric;
@@ -56,6 +56,7 @@ public class GeneralTeleOp extends OpMode {
     double speedMultiplier;
 
     private GoBildaPinpointDriver pinpoint;
+    private boolean resetHeadingPending = false;
 
     private TriggerReader leftTrigger;
     private TriggerReader rightTrigger;
@@ -94,6 +95,10 @@ public class GeneralTeleOp extends OpMode {
     @Override
     public void loop() {
         pinpoint.update();
+        if (resetHeadingPending) {
+            target = pinpoint.getHeading(AngleUnit.RADIANS);
+            resetHeadingPending = false;
+        }
         speedMultiplier = slowMode ? 0.4 : 1.0;
 
         driver.readButtons();
@@ -131,7 +136,7 @@ public class GeneralTeleOp extends OpMode {
     private void checkForInput(){
         if (driver.wasJustPressed(PSButtons.OPTIONS)) {
             pinpoint.resetPosAndIMU();
-            target = 0.0;
+            resetHeadingPending = true;
         }
         if (driver.wasJustPressed(PSButtons.CROSS)) {
             isFieldCentric = !isFieldCentric;
@@ -239,6 +244,11 @@ public class GeneralTeleOp extends OpMode {
         telemetry.addData("intaking", intaking);
         telemetry.addData("reversing", reversing);
         telemetry.addData("outtaking", shooting);
+        telemetry.addData(
+                "Pinpoint heading (deg)",
+                pinpoint.getHeading(AngleUnit.DEGREES)
+        );
+        telemetry.addData("Heading target (rad)", target);
         //telemetry.addData("flyWheel rpm", flyWheel.getPower());
         telemetry.update();
     }
