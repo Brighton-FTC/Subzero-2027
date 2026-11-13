@@ -7,27 +7,27 @@ import com.bylazar.configurables.annotations.Configurable;
 public class RobotConfig {
 
     @Configurable
-    public class Drivetrain{
-        private Drivetrain () {}
-        public double SLOW_MODE = 0.4;
-        private boolean FIELD_CENTRIC_START = true;
-        private double KP = 1.5;
+    public static class Drivetrain{
+        public Drivetrain () {}
+        public static double SLOW_MODE = 0.4;
+        public static boolean FIELD_CENTRIC_START = true;
+        public static double KP = 1.5;
     }
 
     @Configurable
     public static class Auto {
-        private Auto () {}
+        public Auto () {}
 
         public static boolean isBlue;
     }
 
     @Configurable
-    public class FlyWheel {
+    public static class FlyWheel {
         private FlyWheel () {}
 
-        public double KP;
-        public double KI;
-        public double KD;
-        public double KF;
+        public static double KP;
+        public static double KI;
+        public static double KD;
+        public static double KF;
     }
 }

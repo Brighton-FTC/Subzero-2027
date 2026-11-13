@@ -8,10 +8,12 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.PSButtons;
+import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.flyWheel.FlyWheel;
 import org.firstinspires.ftc.teamcode.intake.Intake;
 
@@ -47,7 +49,7 @@ public class GeneralTeleOp extends OpMode {
     private DcMotor br;
     private enum RotStates {MANUAL, AUTO, HOLD}
     private RotStates currentState = RotStates.AUTO;
-    final private double kP = 1.2;
+    final private double kP = RobotConfig.Drivetrain.KP;
     private double target = 0.0;
 
     private boolean isFieldCentric;
@@ -80,6 +82,7 @@ public class GeneralTeleOp extends OpMode {
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
 
         fl.setDirection(DcMotor.Direction.REVERSE);
+        fr.setDirection(DcMotorSimple.Direction.REVERSE);
 
         pinpoint.setOffsets(40.0, -16.9, DistanceUnit.MM);
         pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
@@ -160,8 +163,6 @@ public class GeneralTeleOp extends OpMode {
         shooting = rightTrigger.isDown();
         intaking = leftTrigger.isDown();
 
-        // Reverse while held: flip direction on press, flip back on release.
-        // ASSUMPTION: Intake.reversePower() toggles direction. Adjust if it doesn't.
         if (intake != null) {
             if (operator.wasJustPressed(PSButtons.LEFT_BUMPER)) {
                 reversing = true;
@@ -184,19 +185,13 @@ public class GeneralTeleOp extends OpMode {
         boolean isTranslating = (Math.abs(lx) > 0.01 || Math.abs(ly) > 0.01);
 
         if (currentState == RotStates.MANUAL) {
-            // Driver is turning: pass the stick through and keep the target
-            // synced to the current heading so hold doesn't snap back later.
             rot = rx;
             target = botHeading;
         } else if (strafeMode || !isFieldCentric) {
-            // Strafe mode or robot-centric: no heading hold at all.
             rot = 0;
             target = botHeading;
         } else {
-            // Heading hold / face direction of travel (field-centric only).
             if (isTranslating) {
-                // Angle of the stick vector measured CCW from "forward" (+Y),
-                // matching the field-centric rotation below.
                 target = Math.atan2(-lx, ly);
             }
 
@@ -204,9 +199,7 @@ public class GeneralTeleOp extends OpMode {
             while (error > Math.PI) error -= 2 * Math.PI;
             while (error < -Math.PI) error += 2 * Math.PI;
 
-            // Negative because positive motor "rot" turns the robot clockwise
-            // while Pinpoint heading increases counter-clockwise.
-            // If the robot spins away from the target, remove the minus sign.
+
             rot = -error * kP;
             rot = Math.max(-0.8, Math.min(0.8, rot));
         }
