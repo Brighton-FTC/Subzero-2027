@@ -15,8 +15,11 @@ apply plugin: 'com.android.application'
 // Include common definitions from above.
 apply from: '../build.common.gradle'
 apply from: '../build.dependencies.gradle'
+<<<<<<< HEAD
 apply plugin: 'kotlin-android'
 apply plugin: 'org.jetbrains.kotlin.android'
+=======
+>>>>>>> parent of 96ce80b (converted to kotlin)
 
 android {
     namespace = 'org.firstinspires.ftc.teamcode'
@@ -27,12 +30,8 @@ android {
         }
         jniLibs.useLegacyPackaging true
     }
-    kotlinOptions {
-        jvmTarget = '1.8'
-    }
 }
 
 dependencies {
     implementation project(':FtcRobotController')
-    implementation 'androidx.core:core-ktx:1.19.1'
 }

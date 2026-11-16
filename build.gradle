@@ -5,14 +5,14 @@
  */
 
 buildscript {
+<<<<<<< HEAD
 
     ext.kotlin_version = '2.4.21'
+=======
+>>>>>>> parent of 96ce80b (converted to kotlin)
     repositories {
         mavenCentral()
         google()
-    }
-    dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
